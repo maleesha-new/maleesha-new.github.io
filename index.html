@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>PopCornChill - Movies & Actors</title>
+<style>
+  /* Reset & base */
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #0f0f0f;
+    color: #eee;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+  /* Scrollbar styling for sliders and modals */
+  ::-webkit-scrollbar {
+    height: 8px;
+    width: 8px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #f4c10fcc;
+    border-radius: 4px;
+  }
+  /* Header */
+  header {
+    position: sticky;
+    top: 0;
+    background-color: #141414;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.2rem;
+    box-shadow: 0 3px 10px rgba(229,9,20,0.8);
+    z-index: 1000;
+  }
+  header h1 {
+    font-size: 2rem;
+    font-weight: 900;
+    color: #e50914;
+    letter-spacing: 0.15em;
+    user-select: none;
+    flex-shrink: 0;
+  }
+  /* Search bar */
+  #searchForm {
+    position: relative;
+    flex-grow: 1;
+    max-width: 450px;
+    margin-left: 1.5rem;
+  }
+  #searchInput {
+    width: 100%;
+    background: transparent;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 25px;
+    padding: 0.5rem 2.8rem 0.5rem 1rem;
+    font-size: 1rem;
+    color: white;
+    outline: none;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: 0 0 0 rgba(229,9,20,0);
+  }
+  #searchInput::placeholder {
+    color: #ddd;
+    opacity: 0.8;
+  }
+  #searchInput:focus {
+    border-color: #e50914;
+    box-shadow: 0 0 10px #e50914ff;
+    background-color: rgba(255,255,255,0.1);
+  }
+  /* Search icon */
+  #searchForm::after {
+    content: "\1F50D";
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.3rem;
+    color: #eee;
+    pointer-events: none;
+  }
+  /* Search dropdown */
+  #searchResults {
+    position: absolute;
+    top: 110%;
+    left: 0;
+    width: 100%;
+    max-height: 340px;
+    background: #191919;
+    border-radius: 0 0 20px 20px;
+    overflow-y: auto;
+    box-shadow: 0 10px 20px rgba(229,9,20,0.8);
+    z-index: 1500;
+    opacity: 0;
+    visibility: hidden;
+    transform-origin: top center;
+    transform: scaleY(0);
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  #searchResults.active {
+    opacity: 1;
+    visibility: visible;
+    transform: scaleY(1);
+  }
+  .search-result-item {
+    display: flex;
+    gap: 12px;
+    padding: 10px 15px;
+    border-bottom: 1px solid #222;
+    cursor: pointer;
+    align-items: center;
+  }
+  .search-result-item:last-child {
+    border-bottom: none;
+  }
+  .search-result-item:hover,
+  .search-result-item:focus {
+    background: #e50914;
+    color: #111;
+    outline: none;
+  }
+  .search-poster {
+    width: 60px;
+    height: 86px;
+    border-radius: 8px;
+    object-fit: cover;
+    background: #444;
+    flex-shrink: 0;
+    box-shadow: 0 0 6px #e50914aa;
+  }
+  .search-info {
+    flex-grow: 1;
+    overflow: hidden;
+  }
+  .search-title {
+    font-weight: 700;
+    font-size: 1.1rem;
+    line-height: 1.2rem;
+    margin: 0 0 4px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .search-year {
+    font-size: 0.85rem;
+    color: #ddd;
+    opacity: 0.8;
+  }
+
+  /* Main content */
+  main {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 1rem 12px 4rem;
+  }
+
+  h2.section-title {
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: #f4c10f;
+    margin: 2rem 0 1rem 12px;
+    letter-spacing: 0.05em;
+  }
+
+  /* Sliders container */
+  .slider {
+    position: relative;
+    margin-bottom: 3rem;
+  }
+  .slider-inner {
+    display: flex;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .slider-inner::-webkit-scrollbar {
+    display: none;
+  }
+  /* Slide Arrows */
+  .slider-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(229,9,20,0.9);
+    border: none;
+    border-radius: 50%;
+    width: 38px;
+    height: 38px;
+    color: white;
+    font-size: 26px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.3s ease;
+    z-index: 10;
+    user-select: none;
+  }
+  .slider-arrow:disabled {
+    background: rgba(229,9,20,0.4);
+    cursor: default;
+  }
+  .prev-arrow {
+    left: 4px;
+  }
+  .next-arrow {
+    right: 4px;
+  }
+  .slider-arrow:hover:not(:disabled), .slider-arrow:focus:not(:disabled) {
+    background: #ff1a30;
+    outline: none;
+  }
+
+  /* Movie card */
+  .movie-card {
+    position: relative;
+    flex: 0 0 auto;
+    width: 140px;
+    margin-right: 12px;
+    border-radius: 12px;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.9);
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    background-color: #222;
+    display: flex;
+    flex-direction: column;
+  }
+  .movie-card:hover,
+  .movie-card:focus {
+    outline: none;
+    transform: scale(1.15);
+    box-shadow: 0 10px 45px rgba(229,9,20,0.95);
+    z-index: 15;
+  }
+  .movie-card img {
+    width: 100%;
+    height: 210px;
+    object-fit: cover;
+    border-radius: 12px 12px 0 0;
+    user-select: none;
+  }
+  .movie-info {
+    padding: 8px 10px 14px;
+    flex-grow: 1;
+    color: #f4c10f;
+    font-weight: 700;
+    font-size: 0.9rem;
+    line-height: 1.2rem;
+    text-align: center;
+    user-select: none;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  /* Modal Styles */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15,15,15,0.95);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+    z-index: 3000;
+  }
+  .modal-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .modal-content {
+    background: #1e1e1e;
+    border-radius: 18px;
+    max-width: 700px;
+    width: 90vw;
+    max-height: 600px;
+    overflow-y: auto;
+    padding: 1.5rem 2.5rem 2rem;
+    color: #eee;
+    box-shadow:
+      0 3px 20px rgba(229,9,20,0.9),
+      0 0 25px #e50914aa;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    user-select: none;
+  }
+  .modal-close {
+    position: absolute;
+    top: 16px;
+    right: 20px;
+    background: none;
+    border: none;
+    font-size: 2rem;
+    color: #e50914;
+    cursor: pointer;
+    font-weight: 900;
+    transition: color 0.25s ease;
+  }
+  .modal-close:hover,
+  .modal-close:focus {
+    color: #ff3131;
+    outline: none;
+  }
+  .modal-title {
+    font-weight: 900;
+    font-size: 2.2rem;
+    text-align: center;
+    color: #f4c10f;
+    margin: 0 0 0.8rem 0;
+  }
+  .modal-description {
+    font-size: 1.1rem;
+    line-height: 1.5rem;
+    color: #ddd;
+    margin-bottom: 1.2rem;
+    white-space: pre-wrap;
+  }
+  .video-container {
+    position: relative;
+    padding-bottom: 56.25%;
+    height: 0;
+    overflow: hidden;
+    border-radius: 16px;
+    margin-bottom: 1.8rem;
+    box-shadow: 0 0 18px #e50914cc;
+  }
+  .video-container iframe {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    left: 0;
+    top: 0;
+    border: none;
+  }
+  /* Cast list */
+  .cast-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    user-select: none;
+  }
+  .cast-member {
+    max-width: 100px;
+    text-align: center;
+    color: #eee;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.3s ease;
+  }
+  .cast-member:hover, .cast-member:focus {
+    transform: scale(1.15);
+    box-shadow: 0 0 12px #e50914cc;
+    outline: none;
+    z-index: 20;
+  }
+  .cast-member img {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #f4c10f;
+    margin-bottom: 6px;
+  }
+  .cast-member span {
+    display: block;
+    font-weight: 700;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Actor modal */
+  #actorModal .modal-title {
+    margin-bottom: 12px;
+  }
+  #actorBiography {
+    max-height: 120px;
+    overflow-y: auto;
+    margin-bottom: 16px;
+    font-size: 1rem;
+    color: #ccc;
+    line-height: 1.45;
+  }
+  #actorMovies {
+    margin-top: 0.5rem;
+  }
+  #actorMovies .movie-card {
+    width: 120px;
+    height: auto;
+  }
+  #actorMovies .movie-card img {
+    height: 180px;
+    border-radius: 12px;
+  }
+  #actorMovies .movie-info {
+    color: #ddd;
+    font-weight: 600;
+    font-size: 0.85rem;
+    height: unset;
+    margin: 6px 0 14px 0;
+    text-align: center;
+    white-space: normal;
+  }
+
+  /* Responsive */
+  @media (max-width: 480px) {
+    header {
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      padding: 1rem 8px;
+    }
+    header h1 {
+      flex-shrink: 0;
+      font-size: 1.6rem;
+      letter-spacing: 0.1em;
+    }
+    #searchForm {
+      max-width: 100%;
+      margin-left: 0;
+    }
+    .movie-card {
+      width: 110px;
+      margin-right: 10px;
+    }
+    .movie-card img {
+      height: 165px;
+      border-radius: 10px 10px 0 0;
+    }
+    .modal-content {
+      max-width: 95vw;
+      padding: 1rem 1.5rem 1.5rem;
+      max-height: 560px;
+    }
+    .modal-title {
+      font-size: 1.7rem;
+      margin-bottom: 0.6rem;
+    }
+    .modal-description {
+      font-size: 0.95rem;
+    }
+    .cast-member {
+      max-width: 80px;
+    }
+    .cast-member img {
+      width: 80px;
+      height: 80px;
+      border-width: 2px;
+    }
+    #searchResults {
+      max-height: 280px;
+      top: 105%;
+      border-radius: 0 0 15px 15px;
+    }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>PopCornChill</h1>
+  <form id="searchForm" role="search" aria-label="Search movies and actors" autocomplete="off" spellcheck="false">
+    <input 
+      type="search" id="searchInput" aria-autocomplete="list" aria-controls="searchResults" aria-expanded="false"
+      placeholder="Search movies or actors..."
+      aria-activedescendant="" 
+      aria-haspopup="listbox" />
+    <div id="searchResults" role="listbox" tabindex="-1"></div>
+  </form>
+</header>
+<main>
+  <section aria-label="Popular Movies">
+    <h2 class="section-title">Popular Movies</h2>
+    <div class="slider" id="popularSlider" aria-live="polite" aria-atomic="true">
+      <button class="slider-arrow prev-arrow" aria-label="Scroll left" disabled>&#10094;</button>
+      <div class="slider-inner" tabindex="0"></div>
+      <button class="slider-arrow next-arrow" aria-label="Scroll right" disabled>&#10095;</button>
+    </div>
+  </section>
+  <section aria-label="Upcoming Movies">
+    <h2 class="section-title">Upcoming Movies</h2>
+    <div class="slider" id="upcomingSlider" aria-live="polite" aria-atomic="true">
+      <button class="slider-arrow prev-arrow" aria-label="Scroll left" disabled>&#10094;</button>
+      <div class="slider-inner" tabindex="0"></div>
+      <button class="slider-arrow next-arrow" aria-label="Scroll right" disabled>&#10095;</button>
+    </div>
+  </section>
+</main>
+
+<!-- Movie details modal -->
+<div class="modal-overlay" id="movieModal" role="dialog" aria-modal="true" aria-labelledby="movieModalTitle" aria-describedby="movieModalDesc" tabindex="-1">
+  <div class="modal-content" role="document">
+    <button class="modal-close" id="movieModalCloseBtn" aria-label="Close movie details">&times;</button>
+    <h2 class="modal-title" id="movieModalTitle">Title</h2>
+    <p class="modal-description" id="movieModalDesc">Description</p>
+    <div class="video-container" id="movieModalVideoContainer"></div>
+    <h3 style="color:#f4c10f; text-align:center; margin-bottom: 18px;">Cast</h3>
+    <div class="cast-list" id="movieModalCastList"></div>
+  </div>
+</div>
+
+<!-- Actor details modal -->
+<div class="modal-overlay" id="actorModal" role="dialog" aria-modal="true" aria-labelledby="actorModalTitle" aria-describedby="actorModalDesc" tabindex="-1">
+  <div class="modal-content" role="document">
+    <button class="modal-close" id="actorModalCloseBtn" aria-label="Close actor details">&times;</button>
+    <h2 class="modal-title" id="actorModalTitle">Actor Name</h2>
+    <div id="actorModalDesc" style="color:#ddd; font-size:1rem; max-height: 130px; overflow-y: auto; margin-bottom: 1.2rem;"></div>
+    <h3 style="color:#f4c10f; margin-bottom: 12px;">Known For</h3>
+    <div class="slider" id="actorMoviesSlider" aria-live="polite" aria-atomic="true">
+      <button class="slider-arrow prev-arrow" aria-label="Scroll left" disabled>&#10094;</button>
+      <div class="slider-inner" tabindex="0"></div>
+      <button class="slider-arrow next-arrow" aria-label="Scroll right" disabled>&#10095;</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const TMDB_API_KEY = "07582e3e496545ebbd7cddeb53f9cd92";
+
+  const TMDB_BASE_URL = "https://api.themoviedb.org/3";
+  const TMDB_IMG_BASE = "https://image.tmdb.org/t/p/w500";
+  const TMDB_IMG_BASE_SMALL = "https://image.tmdb.org/t/p/w185";
+
+  const delay = ms => new Promise(res => setTimeout(res, ms));
+
+  const popularSlider = document.getElementById("popularSlider");
+  const upcomingSlider = document.getElementById("upcomingSlider");
+  const popularInner = popularSlider.querySelector(".slider-inner");
+  const upcomingInner = upcomingSlider.querySelector(".slider-inner");
+  const popularPrev = popularSlider.querySelector(".prev-arrow");
+  const popularNext = popularSlider.querySelector(".next-arrow");
+  const upcomingPrev = upcomingSlider.querySelector(".prev-arrow");
+  const upcomingNext = upcomingSlider.querySelector(".next-arrow");
+
+  const searchForm = document.getElementById("searchForm");
+  const searchInput = document.getElementById("searchInput");
+  const searchResults = document.getElementById("searchResults");
+
+  const movieModal = document.getElementById("movieModal");
+  const movieModalCloseBtn = document.getElementById("movieModalCloseBtn");
+  const movieModalTitle = document.getElementById("movieModalTitle");
+  const movieModalDesc = document.getElementById("movieModalDesc");
+  const movieModalVideoContainer = document.getElementById("movieModalVideoContainer");
+  const movieModalCastList = document.getElementById("movieModalCastList");
+
+  const actorModal = document.getElementById("actorModal");
+  const actorModalCloseBtn = document.getElementById("actorModalCloseBtn");
+  const actorModalTitle = document.getElementById("actorModalTitle");
+  const actorModalDesc = document.getElementById("actorModalDesc");
+  const actorMoviesSlider = document.getElementById("actorMoviesSlider");
+  const actorMoviesInner = actorMoviesSlider.querySelector(".slider-inner");
+  const actorMoviesPrev = actorMoviesSlider.querySelector(".prev-arrow");
+  const actorMoviesNext = actorMoviesSlider.querySelector(".next-arrow");
+
+  function createMovieCard(movie) {
+    const card = document.createElement("div");
+    card.className = "movie-card";
+    card.tabIndex = 0;
+    card.setAttribute('role', 'button');
+    card.setAttribute('aria-pressed', 'false');
+    card.setAttribute('aria-label', `${movie.title || movie.name}, release date ${movie.release_date || movie.first_air_date || 'Unknown'}`);
+
+    const posterPath = movie.poster_path || movie.profile_path || null;
+    const img = document.createElement("img");
+    img.src = posterPath ? TMDB_IMG_BASE + posterPath : "https://via.placeholder.com/140x210?text=No+Image";
+    img.alt = `Poster of ${movie.title || movie.name}`;
+    img.loading = "lazy";
+    card.appendChild(img);
+
+    const info = document.createElement("div");
+    info.className = "movie-info";
+    info.title = movie.title || movie.name;
+    info.textContent = movie.title || movie.name;
+    card.appendChild(info);
+
+    return card;
+  }
+
+  function attachSliderArrows(slider, prevBtn, nextBtn) {
+    const inner = slider.querySelector(".slider-inner");
+    function updateButtons() {
+      prevBtn.disabled = inner.scrollLeft <= 5;
+      nextBtn.disabled = inner.scrollLeft + inner.clientWidth >= inner.scrollWidth - 5;
+    }
+    prevBtn.addEventListener("click", () => {
+      inner.scrollBy({left: -inner.clientWidth * 0.7, behavior: "smooth"});
+    });
+    nextBtn.addEventListener("click", () => {
+      inner.scrollBy({left: inner.clientWidth * 0.7, behavior: "smooth"});
+    });
+    inner.addEventListener("scroll", () => {
+      window.requestAnimationFrame(updateButtons);
+    });
+    updateButtons();
+  }
+  attachSliderArrows(popularSlider, popularPrev, popularNext);
+  attachSliderArrows(upcomingSlider, upcomingPrev, upcomingNext);
+  attachSliderArrows(actorMoviesSlider, actorMoviesPrev, actorMoviesNext);
+
+  function trapFocus(element) {
+    const focusableElements = element.querySelectorAll(
+      'a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), iframe, object, embed, [tabindex]:not([tabindex="-1"]), [contenteditable]'
+    );
+    if (focusableElements.length === 0) return;
+
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length -1];
+
+    function handleFocus(event) {
+      if (event.key === "Tab" || event.keyCode === 9) {
+        if (event.shiftKey) { 
+          if (document.activeElement === firstElement) {
+            event.preventDefault();
+            lastElement.focus();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            event.preventDefault();
+            firstElement.focus();
+          }
+        }
+      } else if(event.key === "Escape") {
+        if (element.id === "movieModal") closeMovieModal();
+        else if (element.id === "actorModal") closeActorModal();
+      }
+    }
+    element.addEventListener("keydown", handleFocus);
+  }
+
+  async function fetchJson(url) {
+    try {
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error(`HTTP error! ${resp.status}`);
+      return await resp.json();
+    } catch(err) {
+      console.error(err);
+      return null;
+    }
+  }
+
+  async function fetchPopularMovies(page=1) {
+    const url = `${TMDB_BASE_URL}/movie/popular?api_key=${TMDB_API_KEY}&language=en-US&page=${page}`;
+    return fetchJson(url);
+  }
+  async function fetchUpcomingMovies(page=1) {
+    const url = `${TMDB_BASE_URL}/movie/upcoming?api_key=${TMDB_API_KEY}&language=en-US&page=${page}`;
+    return fetchJson(url);
+  }
+  async function fetchMovieDetails(movieId) {
+    const url = `${TMDB_BASE_URL}/movie/${movieId}?api_key=${TMDB_API_KEY}&language=en-US&append_to_response=videos,credits`;
+    return fetchJson(url);
+  }
+  async function fetchPersonDetails(personId) {
+    const url = `${TMDB_BASE_URL}/person/${personId}?api_key=${TMDB_API_KEY}&language=en-US&append_to_response=combined_credits`;
+    return fetchJson(url);
+  }
+  async function multiSearch(query) {
+    const url = `${TMDB_BASE_URL}/search/multi?api_key=${TMDB_API_KEY}&language=en-US&query=${encodeURIComponent(query)}&page=1&include_adult=false`;
+    return fetchJson(url);
+  }
+
+  function renderMoviesSlider(movies, container, clickHandler) {
+    container.innerHTML = "";
+    movies.forEach(movie => {
+      const card = createMovieCard(movie);
+      card.onclick = () => clickHandler(movie);
+      card.onkeydown = (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          clickHandler(movie);
+        }
+      };
+      container.appendChild(card);
+    });
+  }
+  function renderCastList(cast, container) {
+    container.innerHTML = "";
+    cast.forEach(member => {
+      const div = document.createElement("div");
+      div.className = "cast-member";
+      div.tabIndex = 0;
+      div.setAttribute('role', 'button');
+      div.setAttribute('aria-label', `Actor or actress: ${member.name}`);
+      const img = document.createElement("img");
+      img.src = member.profile_path ? TMDB_IMG_BASE_SMALL + member.profile_path : "https://via.placeholder.com/100x100?text=N/A";
+      img.alt = `Photo of ${member.name}`;
+      img.loading = "lazy";
+      div.appendChild(img);
+      const span = document.createElement("span");
+      span.textContent = member.name;
+      div.appendChild(span);
+      div.addEventListener("click", () => openActorModal(member.id));
+      div.addEventListener("keydown", e => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openActorModal(member.id);
+        }
+      });
+      container.appendChild(div);
+    });
+  }
+  function findYoutubeTrailer(videos) {
+    if (!videos || !videos.results) return null;
+    const trailer = videos.results.find(
+      v => v.site === "YouTube" && v.type === "Trailer" && (v.official || v.language === "en" || !v.language)
+    );
+    if (trailer) return trailer.key;
+    const anyYoutube = videos.results.find(v => v.site === "YouTube");
+    if (anyYoutube) return anyYoutube.key;
+    return null;
+  }
+  async function openMovieModal(movie) {
+    movieModalTitle.textContent = "Loading...";
+    movieModalDesc.textContent = "";
+    movieModalVideoContainer.innerHTML = "";
+    movieModalCastList.innerHTML = "";
+    movieModal.classList.add("active");
+    document.body.style.overflow = "hidden";
+    movieModal.focus();
+    const details = await fetchMovieDetails(movie.id || movie.movie_id);
+    if (!details) {
+      movieModalTitle.textContent = "Failed to load movie details";
+      return;
+    }
+    movieModalTitle.textContent = details.title || details.name || "Unknown title";
+    movieModalDesc.textContent = details.overview || "No description available.";
+    const ytKey = findYoutubeTrailer(details.videos);
+    if (ytKey) {
+      const iframe = document.createElement("iframe");
+      iframe.src = `https://www.youtube.com/embed/${ytKey}?autoplay=1&rel=0`;
+      iframe.title = `${details.title} Trailer`;
+      iframe.allow =
+        "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
+      iframe.allowFullscreen = true;
+      movieModalVideoContainer.appendChild(iframe);
+    } else {
+      movieModalVideoContainer.textContent = "No trailer available";
+    }
+    if (details.credits && details.credits.cast && details.credits.cast.length > 0) {
+      renderCastList(details.credits.cast.slice(0, 12), movieModalCastList);
+    } else {
+      movieModalCastList.textContent = "No cast info available.";
+    }
+  }
+  function closeMovieModal() {
+    movieModal.classList.remove("active");
+    document.body.style.overflow = "";
+    movieModalVideoContainer.innerHTML = "";
+    movieModalCastList.innerHTML = "";
+    movieModalTitle.textContent = "";
+    movieModalDesc.textContent = "";
+    searchInput.focus();
+  }
+  movieModalCloseBtn.onclick = closeMovieModal;
+  movieModal.onclick = e => {
+    if (e.target === movieModal) closeMovieModal();
+  };
+  async function openActorModal(personId) {
+    actorModal.classList.add("active");
+    document.body.style.overflow = "hidden";
+    actorModal.focus();
+    actorModalTitle.textContent = "Loading...";
+    actorModalDesc.textContent = "";
+    actorMoviesInner.innerHTML = "";
+    actorMoviesPrev.disabled = true;
+    actorMoviesNext.disabled = true;
+    const details = await fetchPersonDetails(personId);
+    if (!details) {
+      actorModalTitle.textContent = "Failed to load actor details.";
+      return;
+    }
+    actorModalTitle.textContent = details.name || "Unknown";
+    actorModalDesc.textContent = details.biography || "Biography not available.";
+    if (details.combined_credits && details.combined_credits.cast) {
+      const uniqueMovies = new Map();
+      details.combined_credits.cast.forEach(movie => {
+        if (!uniqueMovies.has(movie.id)) uniqueMovies.set(movie.id, movie);
+      });
+      const movies = Array.from(uniqueMovies.values())
+                          .filter(m => m.poster_path)
+                          .sort((a,b) => b.popularity - a.popularity)
+                          .slice(0, 15);
+      renderMoviesSlider(movies, actorMoviesInner, openMovieModal);
+      updateSliderButtons(actorMoviesSlider);
+    } else {
+      actorMoviesInner.textContent = "No movies found for this actor.";
+    }
+  }
+  function closeActorModal() {
+    actorModal.classList.remove("active");
+    document.body.style.overflow = "";
+    actorModalTitle.textContent = "";
+    actorModalDesc.textContent = "";
+    actorMoviesInner.innerHTML = "";
+    searchInput.focus();
+  }
+  actorModalCloseBtn.onclick = closeActorModal;
+  actorModal.onclick = e => {
+    if (e.target === actorModal) closeActorModal();
+  };
+  function updateSliderButtons(slider) {
+    const prevBtn = slider.querySelector(".prev-arrow");
+    const nextBtn = slider.querySelector(".next-arrow");
+    const inner = slider.querySelector(".slider-inner");
+    prevBtn.disabled = inner.scrollLeft <= 10;
+    nextBtn.disabled = inner.scrollLeft + inner.clientWidth >= inner.scrollWidth - 10;
+  }
+  function attachSliderScrollHandler(slider) {
+    const inner = slider.querySelector(".slider-inner");
+    inner.addEventListener("scroll", () => {
+      window.requestAnimationFrame(() => updateSliderButtons(slider));
+    });
+  }
+  attachSliderScrollHandler(popularSlider);
+  attachSliderScrollHandler(upcomingSlider);
+  attachSliderScrollHandler(actorMoviesSlider);
+
+  let searchTimeout = null;
+  let searchActiveIndex = -1;
+
+  const renderSearch = (results) => {
+    searchResults.innerHTML = "";
+    if (results.length === 0) {
+      const noRes = document.createElement("div");
+      noRes.textContent = "No results found.";
+      noRes.style.padding = "14px 15px";
+      noRes.style.color = "#bbb";
+      searchResults.appendChild(noRes);
+      return;
+    }
+    results.forEach((item, idx) => {
+      const div = document.createElement("div");
+      div.className = "search-result-item";
+      div.tabIndex = 0;
+      div.setAttribute("role", "option");
+      div.setAttribute("aria-selected", "false");
+      div.setAttribute("data-id", item.id);
+      div.setAttribute("data-type", item.media_type);
+      div.setAttribute("data-title", item.title || item.name);
+      div.setAttribute("data-year", item.release_date ? item.release_date.slice(0,4) : (item.first_air_date ? item.first_air_date.slice(0,4) : ""));
+      const img = document.createElement("img");
+      img.className = "search-poster";
+      if (item.poster_path || item.profile_path){
+        img.src = TMDB_IMG_BASE_SMALL + (item.poster_path || item.profile_path);
+        img.alt = `Image of ${item.title || item.name}`;
+      } else {
+        img.src = "https://via.placeholder.com/60x86?text=N/A";
+        img.alt = `No image available for ${item.title || item.name}`;
+      }
+      div.appendChild(img);
+      const info = document.createElement("div");
+      info.className = "search-info";
+      const titleEl = document.createElement("div");
+      titleEl.className = "search-title";
+      titleEl.textContent = item.title || item.name;
+      info.appendChild(titleEl);
+      if (item.media_type === "movie") {
+        const yearEl = document.createElement("div");
+        yearEl.className = "search-year";
+        yearEl.textContent = item.release_date ? item.release_date.slice(0,4) : "";
+        info.appendChild(yearEl);
+      }
+      div.appendChild(info);
+      div.onclick = () => {
+        clearSearchResults();
+        if(item.media_type === "movie" || item.media_type === "tv") {
+          openMovieModal(item);
+        } else if(item.media_type === "person") {
+          openActorModal(item.id);
+        }
+        searchInput.value = "";
+      };
+      div.onkeydown = (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          div.click();
+        }
+      };
+      searchResults.appendChild(div);
+    });
+  };
+
+  function clearSearchResults() {
+    searchResults.classList.remove("active");
+    searchResults.innerHTML = "";
+    searchInput.setAttribute("aria-expanded", "false");
+    searchActiveIndex = -1;
+  }
+
+  function debounce(func, wait = 400) {
+    let timeout;
+    return function (...args) {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+  }
+
+  async function performSearch(query) {
+    if (!query || query.length < 2) {
+      clearSearchResults();
+      return;
+    }
+    searchResults.innerHTML = `<div style="padding:14px 15px; color:#bbb;">Searching...</div>`;
+    searchResults.classList.add("active");
+    searchInput.setAttribute("aria-expanded", "true");
+    try {
+      const response = await fetch(`${TMDB_BASE_URL}/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&page=1&include_adult=false&language=en-US`);
+      const data = await response.json();
+      if(data && data.results) {
+        const filtered = data.results.filter(item => ["movie", "tv", "person"].includes(item.media_type));
+        renderSearch(filtered);
+      } else {
+        renderSearch([]);
+      }
+    } catch {
+      renderSearch([]);
+    }
+  }
+
+  const debouncedSearch = debounce(performSearch, 400);
+  searchInput.addEventListener("input", e => debouncedSearch(e.target.value.trim()));
+
+  searchInput.addEventListener("keydown", e => {
+    const results = Array.from(searchResults.children);
+    if (results.length === 0) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      searchActiveIndex++;
+      if (searchActiveIndex >= results.length) searchActiveIndex = 0;
+      setActiveSearchItem(results, searchActiveIndex);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      searchActiveIndex--;
+      if (searchActiveIndex < 0) searchActiveIndex = results.length -1;
+      setActiveSearchItem(results, searchActiveIndex);
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (searchActiveIndex >= 0 && results[searchActiveIndex]) {
+        results[searchActiveIndex].click();
+      }
+    } else if (e.key === "Escape") {
+      clearSearchResults();
+    }
+  });
+
+  function setActiveSearchItem(results, idx) {
+    results.forEach((el, i) => {
+      if(i === idx){
+        el.classList.add("focused");
+        el.setAttribute("aria-selected", "true");
+        el.focus();
+      } else {
+        el.classList.remove("focused");
+        el.setAttribute("aria-selected", "false");
+      }
+    });
+  }
+
+  document.addEventListener("click", e => {
+    if (!searchForm.contains(e.target)) {
+      clearSearchResults();
+    }
+  });
+
+  searchInput.addEventListener("focus", e => {
+    if (searchResults.children.length > 0) {
+      searchResults.classList.add("active");
+      searchInput.setAttribute("aria-expanded", "true");
+    }
+  });
+
+  async function init() {
+    const popularData = await fetchPopularMovies();
+    if (popularData && popularData.results) {
+      renderMoviesSlider(popularData.results, popularInner, openMovieModal);
+      updateSliderButtons(popularSlider);
+    }
+    const upcomingData = await fetchUpcomingMovies();
+    if (upcomingData && upcomingData.results) {
+      renderMoviesSlider(upcomingData.results, upcomingInner, openMovieModal);
+      updateSliderButtons(upcomingSlider);
+    }
+  }
+
+  window.onload = init;
+
+  trapFocus(movieModal);
+  trapFocus(actorModal);
+</script>
+</body>
+</html>
+</content>
+</create_file>
